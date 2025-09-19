@@ -39,6 +39,9 @@ export const useChat = () => {
   const updateStreamingContent = useAppState(
     (state) => state.updateStreamingContent
   )
+  const updatePromptProgress = useAppState(
+    (state) => state.updatePromptProgress
+  )
   const updateLoadingModel = useAppState((state) => state.updateLoadingModel)
   const setAbortController = useAppState((state) => state.setAbortController)
   const assistants = useAssistant((state) => state.assistants)
@@ -238,6 +241,7 @@ export const useChat = () => {
       const abortController = new AbortController()
       setAbortController(activeThread.id, abortController)
       updateStreamingContent(emptyThreadContent)
+      updatePromptProgress(undefined)
       // Do not add new message on retry
       if (troubleshooting)
         addMessage(newUserThreadContent(activeThread.id, message, attachments))
@@ -405,6 +409,13 @@ export const useChat = () => {
                     break
                   }
 
+                  console.log(part)
+
+                  // Handle prompt progress if available
+                  if ('prompt_progress' in part && part.prompt_progress) {
+                    updatePromptProgress(part.prompt_progress)
+                  }
+
                   // Error message
                   if (!part.choices) {
                     throw new Error(
@@ -521,6 +532,7 @@ export const useChat = () => {
           )
           addMessage(updatedMessage ?? finalContent)
           updateStreamingContent(emptyThreadContent)
+          updatePromptProgress(undefined)
           updateThreadTimestamp(activeThread.id)
 
           isCompleted = !toolCalls.length
@@ -542,6 +554,7 @@ export const useChat = () => {
       } finally {
         updateLoadingModel(false)
         updateStreamingContent(undefined)
+        updatePromptProgress(undefined)
       }
     },
     [
@@ -553,6 +566,7 @@ export const useChat = () => {
       getMessages,
       setAbortController,
       updateStreamingContent,
+      updatePromptProgress,
       addMessage,
       updateThreadTimestamp,
       selectedModel,
